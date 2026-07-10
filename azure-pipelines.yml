@@ -35,4 +35,4 @@ steps:
     azureSubscription: 'firstdeploywebapp'
     appType: 'webAppLinux'
     appName: 'firstdeploytest'
-    package: '$(System.DefaultWorkingDirectory)/**/*.zip'
+    package: '$(System.DefaultWorkingDirectory)/**/*.war'
