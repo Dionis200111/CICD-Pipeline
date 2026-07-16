@@ -74,6 +74,6 @@ steps:
 - task: AzureWebAppContainer@1
   displayName: 'Deploy Container to App Service'
   inputs:
-    azureSubscription: '$(azureSubscriptionConnection)'
+    azureSubscription: 'firstdeploywebapp'
     appName: 'firstdeploytest'
     imageName: '$(imageRepository):$(tag)'
