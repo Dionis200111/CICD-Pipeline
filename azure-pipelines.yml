@@ -17,7 +17,7 @@ variables:
   azureSubscriptionConnection: 'AzureConnection' 
   # The name of the repository inside your ACR
   imageRepository: 'my-tomcat-app' 
-  dockerfilePath: '$(Build.SourcesDirectory)/Dockerfile'
+  dockerfilePath: '$(Build.SourcesDirectory)/maven-project/Dockerfile'
   tag: '$(Build.BuildId)'
 
 steps:
