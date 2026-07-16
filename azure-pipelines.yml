@@ -6,11 +6,24 @@
 trigger:
 - main
 
+# 1. Target your local self-hosted Windows agent
 pool:
-  vmImage: 'ubuntu-latest'
+  name: 'Default' 
+
+variables:
+  # The Docker Registry service connection created in Step 1
+  dockerRegistryServiceConnection: 'my-acr-connection' 
+  # Your existing ARM connection (from your screenshot) for the App Service deploy step
+  azureSubscriptionConnection: 'AzureConnection' 
+  # The name of the repository inside your ACR
+  imageRepository: 'my-tomcat-app' 
+  dockerfilePath: '$(Build.SourcesDirectory)/Dockerfile'
+  tag: '$(Build.BuildId)'
 
 steps:
+# 2. Build the Java package using Maven
 - task: Maven@3
+  displayName: 'Maven Package'
   inputs:
     mavenPomFile: 'maven-project/pom.xml'
     mavenOptions: '-Xmx3072m'
@@ -19,20 +32,48 @@ steps:
     jdkArchitectureOption: 'x64'
     publishJUnitResults: true
     testResultsFiles: '**/surefire-reports/TEST-*.xml'
-    goals: 'package'
+    goals: 'clean package'
+
+# 3. Copy the generated WAR file to the root directory
 - task: CopyFiles@2
+  displayName: 'Stage WAR for Dockerfile'
   inputs:
-    SourceFolder: '$(Build.SourcesDirectory)/maven-project'
-    Contents: '**/webapp/target/*.war'
-    TargetFolder: '$(build.artifactstagingdirectory)'
-- task: PublishBuildArtifacts@1
+    SourceFolder: '$(Build.SourcesDirectory)/maven-project/webapp/target'
+    Contents: '*.war'
+    TargetFolder: '$(Build.SourcesDirectory)'
+    CleanTargetFolder: false
+    flattenFolders: true
+
+# 4. Rename WAR to exactly "webapp.war" so the Dockerfile COPY command succeeds
+- powershell: |
+    $warFile = Get-ChildItem -Path "$(Build.SourcesDirectory)/*.war" | Select-Object -First 1
+    if ($warFile) {
+        Rename-Item -Path $warFile.FullName -NewName "webapp.war" -Force
+        Write-Host "Successfully prepared webapp.war next to Dockerfile!"
+    } else {
+        Write-Error "No WAR file found to rename!"
+        exit 1
+    }
+  displayName: 'Rename WAR to webapp.war'
+
+# 5. Build and Push the Docker Image to ACR
+- task: Docker@2
+  displayName: 'Build and Push Docker Image to ACR'
   inputs:
-    PathtoPublish: '$(Build.ArtifactStagingDirectory)'
-    ArtifactName: 'drop'
-    publishLocation: 'Container'
-- task: AzureWebApp@1
+    containerRegistry: '$(dockerRegistryServiceConnection)'
+    repository: '$(imageRepository)'
+    command: 'buildAndPush'
+    Dockerfile: '$(dockerfilePath)'
+    buildContext: '$(Build.SourcesDirectory)' 
+    tags: |
+      $(tag)
+      latest
+
+# 6. Deploy the Container to Azure App Service
+# (This step uses your existing 'AzureConnection' from your screenshot!)
+- task: AzureWebAppContainer@1
+  displayName: 'Deploy Container to App Service'
   inputs:
-    azureSubscription: 'firstdeploywebapp'
-    appType: 'webAppLinux'
+    azureSubscription: '$(azureSubscriptionConnection)'
     appName: 'firstdeploytest'
-    package: '$(System.DefaultWorkingDirectory)/**/*.war'
+    imageName: '$(imageRepository):$(tag)'
