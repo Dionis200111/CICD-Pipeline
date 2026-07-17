@@ -34,29 +34,8 @@ steps:
     testResultsFiles: '**/surefire-reports/TEST-*.xml'
     goals: 'clean package'
 
-# 3. Copy the generated WAR file to the root directory
-- task: CopyFiles@2
-  displayName: 'Stage WAR for Dockerfile'
-  inputs:
-    SourceFolder: '$(Build.SourcesDirectory)/maven-project/webapp/target'
-    Contents: '*.war'
-    TargetFolder: '$(Build.SourcesDirectory)'
-    CleanTargetFolder: false
-    flattenFolders: true
 
-# 4. Rename WAR to exactly "webapp.war" so the Dockerfile COPY command succeeds
-- powershell: |
-    $warFile = Get-ChildItem -Path "$(Build.SourcesDirectory)/*.war" | Select-Object -First 1
-    if ($warFile) {
-        Rename-Item -Path $warFile.FullName -NewName "webapp.war" -Force
-        Write-Host "Successfully prepared webapp.war next to Dockerfile!"
-    } else {
-        Write-Error "No WAR file found to rename!"
-        exit 1
-    }
-  displayName: 'Rename WAR to webapp.war'
-
-# 5. Build and Push the Docker Image to ACR
+# 3. Build and Push the Docker Image to ACR
 - task: Docker@2
   displayName: 'Build and Push Docker Image to ACR'
   inputs:
@@ -69,7 +48,7 @@ steps:
       $(tag)
       latest
 
-# 6. Deploy the Container to Azure App Service
+# 4. Deploy the Container to Azure App Service
 # (This step uses your existing 'AzureConnection' from your screenshot!)
 - task: AzureWebAppContainer@1
   displayName: 'Deploy Container to App Service'
