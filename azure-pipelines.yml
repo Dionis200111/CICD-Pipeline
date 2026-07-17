@@ -34,27 +34,12 @@ steps:
     testResultsFiles: '**/surefire-reports/TEST-*.xml'
     goals: 'clean package'
 
+
 # 3. Copy the generated WAR file to the root directory
-- task: CopyFiles@2
-  displayName: 'Stage WAR for Dockerfile'
-  inputs:
-    SourceFolder: '$(Build.SourcesDirectory)/maven-project/webapp/target'
-    Contents: '*.war'
-    TargetFolder: '$(Build.SourcesDirectory)'
-    CleanTargetFolder: false
-    flattenFolders: true
+
 
 # 4. Rename WAR to exactly "webapp.war" so the Dockerfile COPY command succeeds
-- powershell: |
-    $warFile = Get-ChildItem -Path "$(Build.SourcesDirectory)/*.war" | Select-Object -First 1
-    if ($warFile) {
-        Rename-Item -Path $warFile.FullName -NewName "webapp.war" -Force
-        Write-Host "Successfully prepared webapp.war next to Dockerfile!"
-    } else {
-        Write-Error "No WAR file found to rename!"
-        exit 1
-    }
-  displayName: 'Rename WAR to webapp.war'
+
 
 # 5. Build and Push the Docker Image to ACR
 - task: Docker@2
@@ -64,7 +49,7 @@ steps:
     repository: '$(imageRepository)'
     command: 'buildAndPush'
     Dockerfile: '$(dockerfilePath)'
-    buildContext: '$(Build.SourcesDirectory)/maven-project' 
+    buildContext: '$(Build.SourcesDirectory)/maven-project' #it means the "docker working folder root is maven-project"
     tags: |
       $(tag)
       latest
