@@ -13,8 +13,6 @@ pool:
 variables:
   # The Docker Registry service connection created in Step 1
   dockerRegistryServiceConnection: 'my-acr-connection' 
-  # Your existing ARM connection (from your screenshot) for the App Service deploy step
-  azureSubscriptionConnection: 'AzureConnection' 
   # The name of the repository inside your ACR
   imageRepository: 'my-tomcat-app' 
   dockerfilePath: '$(Build.SourcesDirectory)/maven-project/Dockerfile'
